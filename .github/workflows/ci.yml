@@ -17,6 +17,10 @@ jobs:
     services:
       postgres:
         image: postgres:14
+        env:
+          POSTGRES_USER: yudhis
+          POSTGRES_PASSWORD: 
+          POSTGRES_DB: simple_bank
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
