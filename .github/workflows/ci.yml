@@ -18,8 +18,8 @@ jobs:
       postgres:
         image: postgres:14
         env:
-          POSTGRES_USER: yudhis
-          POSTGRES_PASSWORD: 
+          POSTGRES_USER: root
+          POSTGRES_PASSWORD: secret
           POSTGRES_DB: simple_bank
         options: >-
           --health-cmd pg_isready
@@ -37,6 +37,9 @@ jobs:
 
     - name: Check out code into the go module directory
       uses: actions/checkout@v4
+
+    - name: Run migrations
+      run: migrate -path db/migration -database "postgresql://root:secret@localhost:5432/simple_bank?sslmode=disable" -verbose up
 
     - name: Test
       run: go test -v ./...
