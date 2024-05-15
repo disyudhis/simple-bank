@@ -12,7 +12,6 @@ on:
 jobs:
 
   test:
-    names: Test
     runs-on: ubuntu-latest
     steps:
     - name: Set up Go
