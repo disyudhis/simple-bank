@@ -1,7 +1,7 @@
 package api
 
 import (
-	"database/sql"
+	"errors"
 	"net/http"
 	"time"
 
@@ -12,10 +12,10 @@ import (
 )
 
 type createUserRequest struct {
-	Username    string `json:"username" binding:"required,alphanum"`
+	Username string `json:"username" binding:"required,alphanum"`
 	Password string `json:"password" binding:"required,min=6"`
 	FullName string `json:"full_name" binding:"required"`
-	Email string `json:"email" binding:"required,email"`
+	Email    string `json:"email" binding:"required,email"`
 }
 
 type userResponse struct {
@@ -27,12 +27,12 @@ type userResponse struct {
 }
 
 func newUserResponse(user db.User) userResponse {
-	return userResponse  {
-		Username: user.Username,
-		FullName: user.FullName,
-		Email: user.Email,
+	return userResponse{
+		Username:          user.Username,
+		FullName:          user.FullName,
+		Email:             user.Email,
 		PasswordChangedAt: user.PasswordChangedAt,
-		CreatedAt: user.CreatedAt,
+		CreatedAt:         user.CreatedAt,
 	}
 }
 
@@ -49,12 +49,11 @@ func (server *Server) createUser(ctx *gin.Context) {
 		return
 	}
 
-
-	arg := db.CreateUserParams {
-		Username: req.Username,
+	arg := db.CreateUserParams{
+		Username:       req.Username,
 		HashedPassword: hashedPassword,
-		FullName: req.FullName,
-		Email: req.Email,
+		FullName:       req.FullName,
+		Email:          req.Email,
 	}
 
 	user, err := server.store.CreateUser(ctx, arg)
@@ -75,13 +74,13 @@ func (server *Server) createUser(ctx *gin.Context) {
 }
 
 type loginUserRequest struct {
-	Username    string `json:"username" binding:"required,alphanum"`
+	Username string `json:"username" binding:"required,alphanum"`
 	Password string `json:"password" binding:"required,min=6"`
 }
 
 type loginUserResponse struct {
-	AccessToken string `json:"access_token"`
-	User  userResponse `json:"user"`
+	AccessToken string       `json:"access_token"`
+	User        userResponse `json:"user"`
 }
 
 func (server *Server) loginUser(ctx *gin.Context) {
@@ -93,7 +92,7 @@ func (server *Server) loginUser(ctx *gin.Context) {
 
 	user, err := server.store.GetUser(ctx, req.Username)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, db.ErrRecordNotFound) {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
 			return
 		}
@@ -119,7 +118,7 @@ func (server *Server) loginUser(ctx *gin.Context) {
 
 	rsp := loginUserResponse{
 		AccessToken: accessToken,
-		User: newUserResponse(user),
+		User:        newUserResponse(user),
 	}
 
 	ctx.JSON(http.StatusOK, rsp)

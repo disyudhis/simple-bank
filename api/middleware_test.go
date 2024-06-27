@@ -32,7 +32,6 @@ func TestAuthMiddleware(t *testing.T) {
 		name string
 		setupAuth func(t *testing.T, request *http.Request, tokenMaker token.Maker)
 		checkResponse func(t *testing.T, recorder *httptest.ResponseRecorder)
-
 	}{
 		{
 			name: "OK",
