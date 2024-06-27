@@ -32,7 +32,6 @@ func TestTransferAPI(t *testing.T) {
 	account1.Currency = util.USD
 	account2.Currency = util.USD
 	account3.Currency = util.EUR
-
 	testCases := []struct {
 		name          string
 		body          gin.H
