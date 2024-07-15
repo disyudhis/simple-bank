@@ -12,10 +12,12 @@ import (
 	"github.com/disyudhis/simplebank/gapi"
 	"github.com/disyudhis/simplebank/pb"
 	"github.com/disyudhis/simplebank/util"
+	"github.com/disyudhis/simplebank/worker"
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/hibiken/asynq"
 	_ "github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/lib/pq"
@@ -45,8 +47,15 @@ func main() {
 	runDBMigration(config.MigrationURL, config.DBSource)
 
 	store := db.NewStore(connPool)
-	go runGatewayServer(config, store)
-	runGrpcServer(config, store)
+
+	redisOpt := asynq.RedisClientOpt{
+		Addr: config.RedisAddress,
+	}
+
+	taskDistributor := worker.NewRedisTaskDistributor(redisOpt)
+
+	go runGatewayServer(config, store, taskDistributor)
+	runGrpcServer(config, store, taskDistributor)
 }
 
 func runDBMigration(migrationURL string, dbSource string) {
@@ -62,8 +71,8 @@ func runDBMigration(migrationURL string, dbSource string) {
 	log.Info().Msg("db migrate successfully")
 }
 
-func runGrpcServer(config util.Config, store db.Store) {
-	server, err := gapi.NewServer(config, store)
+func runGrpcServer(config util.Config, store db.Store, taskDistributor worker.TaskDistributor) {
+	server, err := gapi.NewServer(config, store, taskDistributor)
 	if err != nil {
 		log.Fatal().Msg("cannot create server")
 	}
@@ -83,8 +92,8 @@ func runGrpcServer(config util.Config, store db.Store) {
 	}
 }
 
-func runGatewayServer(config util.Config, store db.Store) {
-	server, err := gapi.NewServer(config, store)
+func runGatewayServer(config util.Config, store db.Store, taskDistributor worker.TaskDistributor) {
+	server, err := gapi.NewServer(config, store, taskDistributor)
 	if err != nil {
 		log.Fatal().Msg("cannot create server")
 	}
